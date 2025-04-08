@@ -1,6 +1,8 @@
 package org.example;
 
 import javafx.application.Application;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -28,7 +30,7 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
 
     private TextField searchField;
     private Button searchButton;
-    private ListView<HBox> resultList;
+    private TableView<ItemData> tableView;
     private List<String> resultUrls = new ArrayList<>();
     private Hyperlink saleUrlLink;
     private Hyperlink allUrlLink;
@@ -80,8 +82,6 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
         searchButton.setStyle("-fx-background-color: #FF6F0F; -fx-text-fill: white;");
         searchButton.setOnAction(e -> searchItems());
 
-        resultList = new ListView<>();
-
         saleUrlLink = new Hyperlink("거래 가능 매물 URL");
         saleUrlLink.setOnAction(e -> openWebpage(saleUrlLink.getText()));
 
@@ -90,12 +90,31 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
 
         VBox urlBox = new VBox(5, saleUrlLink, allUrlLink);
 
+        tableView = new TableView<>();
+
+        TableColumn<ItemData, String> dateCol = new TableColumn<>("등록일");
+        dateCol.setCellValueFactory(cellData -> cellData.getValue().dateProperty());
+
+        TableColumn<ItemData, String> titleCol = new TableColumn<>("상품명");
+        titleCol.setCellValueFactory(cellData -> cellData.getValue().titleProperty());
+
+        TableColumn<ItemData, String> priceCol = new TableColumn<>("가격");
+        priceCol.setCellValueFactory(cellData -> cellData.getValue().priceProperty());
+
+        TableColumn<ItemData, String> regionCol = new TableColumn<>("지역");
+        regionCol.setCellValueFactory(cellData -> cellData.getValue().regionProperty());
+
+        TableColumn<ItemData, Hyperlink> linkCol = new TableColumn<>("링크");
+        linkCol.setCellValueFactory(cellData -> cellData.getValue().linkProperty());
+
+        tableView.getColumns().addAll(dateCol, titleCol, priceCol, regionCol, linkCol);
+
         VBox layout = new VBox(10);
         layout.setPadding(new Insets(15));
-        layout.getChildren().addAll(searchField, regionComboBox, searchButton, urlBox, resultList);
+        layout.getChildren().addAll(searchField, regionComboBox, searchButton, urlBox, tableView);
         layout.setStyle("-fx-background-color: #FFF5EC;");
 
-        Scene scene = new Scene(layout, 900, 600);
+        Scene scene = new Scene(layout, 1000, 600);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -109,7 +128,7 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
             return;
         }
 
-        resultList.getItems().clear();
+        tableView.getItems().clear();
         resultUrls.clear();
 
         String baseUrl;
@@ -154,15 +173,13 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
                     String date = item.select(".article-timeago").text();
                     String itemUrl = "https://www.daangn.com" + item.attr("href");
 
-                    Label infoLabel = new Label(String.format("[%s] %s / %s / %s", date, title, price, regionName));
-                    Hyperlink itemLink = new Hyperlink(itemUrl);
-                    itemLink.setOnAction(e -> openWebpage(itemUrl));
+                    Hyperlink link = new Hyperlink("열기");
+                    link.setOnAction(e -> openWebpage(itemUrl));
 
-                    HBox hBox = new HBox(10, infoLabel, itemLink);
-                    hBox.setPadding(new Insets(5));
+                    ItemData data = new ItemData(date, title, price, regionName, link);
 
                     javafx.application.Platform.runLater(() -> {
-                        resultList.getItems().add(hBox);
+                        tableView.getItems().add(data);
                         resultUrls.add(itemUrl);
                     });
                 }
@@ -188,4 +205,26 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
     public static void main(String[] args) {
         launch(args);
     }
+}
+
+class ItemData {
+    private final SimpleStringProperty date;
+    private final SimpleStringProperty title;
+    private final SimpleStringProperty price;
+    private final SimpleStringProperty region;
+    private final SimpleObjectProperty<Hyperlink> link;
+
+    public ItemData(String date, String title, String price, String region, Hyperlink link) {
+        this.date = new SimpleStringProperty(date);
+        this.title = new SimpleStringProperty(title);
+        this.price = new SimpleStringProperty(price);
+        this.region = new SimpleStringProperty(region);
+        this.link = new SimpleObjectProperty<>(link);
+    }
+
+    public SimpleStringProperty dateProperty() { return date; }
+    public SimpleStringProperty titleProperty() { return title; }
+    public SimpleStringProperty priceProperty() { return price; }
+    public SimpleStringProperty regionProperty() { return region; }
+    public SimpleObjectProperty<Hyperlink> linkProperty() { return link; }
 }
