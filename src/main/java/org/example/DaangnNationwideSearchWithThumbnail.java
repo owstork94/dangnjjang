@@ -30,7 +30,8 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
     private Button searchButton;
     private ListView<String> resultList;
     private List<String> resultUrls = new ArrayList<>();
-    private Hyperlink urlLink;
+    private Hyperlink saleUrlLink;
+    private Hyperlink allUrlLink;
     private ComboBox<String> regionComboBox;
 
     private final String[][] regions = {
@@ -89,12 +90,17 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
             }
         });
 
-        urlLink = new Hyperlink("검색 URL이 여기에 표시됩니다");
-        urlLink.setOnAction(e -> openWebpage(urlLink.getText()));
+        saleUrlLink = new Hyperlink("거래 가능 매물 URL");
+        saleUrlLink.setOnAction(e -> openWebpage(saleUrlLink.getText()));
+
+        allUrlLink = new Hyperlink("전체 매물 URL");
+        allUrlLink.setOnAction(e -> openWebpage(allUrlLink.getText()));
+
+        VBox urlBox = new VBox(5, saleUrlLink, allUrlLink);
 
         VBox layout = new VBox(10);
         layout.setPadding(new Insets(15));
-        layout.getChildren().addAll(searchField, regionComboBox, searchButton, urlLink, resultList);
+        layout.getChildren().addAll(searchField, regionComboBox, searchButton, urlBox, resultList);
         layout.setStyle("-fx-background-color: #FFF5EC;");
 
         Scene scene = new Scene(layout, 800, 600);
@@ -114,11 +120,11 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
         resultList.getItems().clear();
         resultUrls.clear();
 
-        String searchUrl;
+        String baseUrl;
         boolean isProvince = Arrays.asList(provinces).contains(selectedRegion);
 
         if (isProvince) {
-            searchUrl = "https://www.daangn.com/kr/buy-sell/?only_on_sale=true&search=" +
+            baseUrl = "https://www.daangn.com/kr/buy-sell/?search=" +
                     URLEncoder.encode(selectedRegion + " " + keyword, StandardCharsets.UTF_8);
         } else {
             String areaCode = null;
@@ -132,18 +138,21 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
                 System.out.println("[ERROR] 지역 코드 매칭 실패");
                 return;
             }
-            searchUrl = "https://www.daangn.com/kr/buy-sell/?in=" + areaCode +
-                    "&only_on_sale=true&search=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+            baseUrl = "https://www.daangn.com/kr/buy-sell/?in=" + areaCode +
+                    "&search=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8);
         }
 
-        final String finalUrl = searchUrl;
+        String saleUrl = baseUrl + "&only_on_sale=true";
+        String allUrl = baseUrl;
+
         javafx.application.Platform.runLater(() -> {
-            urlLink.setText(finalUrl);
+            saleUrlLink.setText(saleUrl);
+            allUrlLink.setText(allUrl);
         });
 
         new Thread(() -> {
             try {
-                Document doc = Jsoup.connect(searchUrl).get();
+                Document doc = Jsoup.connect(saleUrl).get();
                 Elements items = doc.select(".flea-market-article-link");
 
                 for (Element item : items) {
