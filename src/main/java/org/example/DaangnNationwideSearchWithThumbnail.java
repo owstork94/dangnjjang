@@ -28,7 +28,7 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
 
     private TextField searchField;
     private Button searchButton;
-    private ListView<String> resultList;
+    private ListView<HBox> resultList;
     private List<String> resultUrls = new ArrayList<>();
     private Hyperlink saleUrlLink;
     private Hyperlink allUrlLink;
@@ -81,14 +81,6 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
         searchButton.setOnAction(e -> searchItems());
 
         resultList = new ListView<>();
-        resultList.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) {
-                int index = resultList.getSelectionModel().getSelectedIndex();
-                if (index >= 0 && index < resultUrls.size()) {
-                    openWebpage(resultUrls.get(index));
-                }
-            }
-        });
 
         saleUrlLink = new Hyperlink("거래 가능 매물 URL");
         saleUrlLink.setOnAction(e -> openWebpage(saleUrlLink.getText()));
@@ -103,7 +95,7 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
         layout.getChildren().addAll(searchField, regionComboBox, searchButton, urlBox, resultList);
         layout.setStyle("-fx-background-color: #FFF5EC;");
 
-        Scene scene = new Scene(layout, 800, 600);
+        Scene scene = new Scene(layout, 900, 600);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -162,10 +154,15 @@ public class DaangnNationwideSearchWithThumbnail extends Application {
                     String date = item.select(".article-timeago").text();
                     String itemUrl = "https://www.daangn.com" + item.attr("href");
 
-                    String displayResult = String.format("[%s] %s / %s / %s", date, title, price, regionName);
+                    Label infoLabel = new Label(String.format("[%s] %s / %s / %s", date, title, price, regionName));
+                    Hyperlink itemLink = new Hyperlink(itemUrl);
+                    itemLink.setOnAction(e -> openWebpage(itemUrl));
+
+                    HBox hBox = new HBox(10, infoLabel, itemLink);
+                    hBox.setPadding(new Insets(5));
 
                     javafx.application.Platform.runLater(() -> {
-                        resultList.getItems().add(displayResult);
+                        resultList.getItems().add(hBox);
                         resultUrls.add(itemUrl);
                     });
                 }
